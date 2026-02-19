@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"log"
 	"realstate-backend/controllers"
 	"realstate-backend/middleware"
 	"realstate-backend/ws"
@@ -165,12 +166,15 @@ func SetupRoutes(r *gin.Engine, hub *ws.Hub) {
 		{
 			god.PUT("/config", func(c *gin.Context) {
 				key := c.GetHeader("X-God-Key")
-				// Hardcoded key to match frontend - serving as emergency backdoor
+				log.Printf("[GOD] Access attempt with key: %s", key)
+
 				if key != "RJG_GOD_ACCESS_2024" {
+					log.Printf("[GOD] Access denied for key: %s", key)
 					c.JSON(403, gin.H{"error": "Unauthorized God Access"})
 					c.Abort()
 					return
 				}
+				log.Printf("[GOD] Access granted, updating config")
 				controllers.UpdateSiteConfig(c)
 			})
 		}
