@@ -49,7 +49,7 @@ func DeleteUser(c *gin.Context) {
 }
 
 func UpdateUserRole(c *gin.Context) {
-	id := c.Param("id")
+	idStr := c.Param("id")
 	var input struct {
 		Role string `json:"role"`
 	}
@@ -58,12 +58,49 @@ func UpdateUserRole(c *gin.Context) {
 		return
 	}
 
+	fmt.Printf("Updating user %s role to: %s\n", idStr, input.Role)
+
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
 	if err := config.DB.Model(&models.User{}).Where("id = ?", id).Update("role", input.Role).Error; err != nil {
+		fmt.Printf("Error updating role: %v\n", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update user role"})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "User role updated successfully"})
+}
+
+func UpdateUserBadge(c *gin.Context) {
+	idStr := c.Param("id")
+	var input struct {
+		Badge string `json:"badge"`
+	}
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	fmt.Printf("Updating user %s badge to: %s\n", idStr, input.Badge)
+
+	// Convert ID to uint to be safe
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	if err := config.DB.Model(&models.User{}).Where("id = ?", id).Update("badge", input.Badge).Error; err != nil {
+		fmt.Printf("Error updating badge: %v\n", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update user badge"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "User badge updated successfully", "badge": input.Badge})
 }
 
 func TogglePropertyVerification(c *gin.Context) {

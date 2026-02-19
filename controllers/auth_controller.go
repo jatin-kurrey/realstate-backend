@@ -131,9 +131,16 @@ func AdminLogin(c *gin.Context) {
 		return
 	}
 
+	// OVERRIDE: Force role to admin for master email in TOKEN regardless of DB
+	// This ensures JWT claims are correct even if DB is stale
+	actualRole := user.Role
+	if user.Email == "admin@rjg.com" {
+		actualRole = "admin"
+	}
+
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"sub":  user.ID,
-		"role": user.Role,
+		"role": actualRole,
 		"exp":  time.Now().Add(time.Hour * 24).Unix(),
 	})
 
@@ -141,7 +148,7 @@ func AdminLogin(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"token": tokenString,
-		"user":  gin.H{"id": user.ID, "name": user.Name, "role": user.Role},
+		"user":  gin.H{"id": user.ID, "name": user.Name, "role": actualRole},
 	})
 }
 

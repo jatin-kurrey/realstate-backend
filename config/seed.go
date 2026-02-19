@@ -14,11 +14,9 @@ func SeedData() {
 	DB.Model(&models.User{}).Count(&userCount)
 	if userCount < 6 {
 		log.Println("Seeding core users...")
-		adminPass, _ := bcrypt.GenerateFromPassword([]byte("admin123"), bcrypt.DefaultCost)
 		userPass, _ := bcrypt.GenerateFromPassword([]byte("password123"), bcrypt.DefaultCost)
 
 		users := []models.User{
-			{Name: "Master Admin", Email: "admin@rjg.com", Password: string(adminPass), Role: "admin"},
 			{Name: "Alok Verma", Email: "alok@example.com", Password: string(userPass), Role: "owner", Phone: "+91 94252 12345", PublicPreference: "Full"},
 			{Name: "Priya Singh", Email: "priya@example.com", Password: string(userPass), Role: "owner", Phone: "+91 94252 67890", PublicPreference: "Anonymized"},
 			{Name: "Rahul Sharma", Email: "rahul@example.com", Password: string(userPass), Role: "seeker", Phone: "+91 91790 11223", PublicPreference: "Full"},
@@ -30,12 +28,24 @@ func SeedData() {
 			var existing models.User
 			if err := DB.Where("email = ?", u.Email).First(&existing).Error; err != nil {
 				DB.Create(&u)
-			} else if u.Role == "admin" {
-				// Ensure admin verification
-				existing.Password = u.Password
-				DB.Save(&existing)
 			}
 		}
+	}
+
+	// Always ensure Admin exists and has correct credentials
+	adminPass, _ := bcrypt.GenerateFromPassword([]byte("admin123"), bcrypt.DefaultCost)
+	adminUser := models.User{Name: "Master Admin", Email: "admin@rjg.com", Password: string(adminPass), Role: "admin"}
+
+	var existingAdmin models.User
+	if err := DB.Where("email = ?", adminUser.Email).First(&existingAdmin).Error; err != nil {
+		log.Println("Creating Admin User...")
+		DB.Create(&adminUser)
+	} else {
+		// FORCE UPDATE: Verify this user is strictly an ADMIN with known password
+		// This fixes cases where user might have accidentally changed role in UI
+		existingAdmin.Password = adminUser.Password
+		existingAdmin.Role = "admin"
+		DB.Save(&existingAdmin)
 	}
 
 	// Get some user IDs for seeding

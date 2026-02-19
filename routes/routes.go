@@ -3,13 +3,20 @@ package routes
 import (
 	"realstate-backend/controllers"
 	"realstate-backend/middleware"
+	"realstate-backend/ws"
 
 	"github.com/gin-gonic/gin"
 )
 
-func SetupRoutes(r *gin.Engine) {
+func SetupRoutes(r *gin.Engine, hub *ws.Hub) {
 	api := r.Group("/api")
 	{
+		// WebSocket Route
+		api.GET("/ws", middleware.AuthMiddleware(), func(c *gin.Context) {
+			userID := c.MustGet("userID").(uint)
+			ws.ServeWs(hub, c.Writer, c.Request, userID)
+		})
+
 		api.GET("/", func(c *gin.Context) {
 			c.JSON(200, gin.H{"message": "Welcome to RJG Property API", "version": "1.0"})
 		})
@@ -53,6 +60,7 @@ func SetupRoutes(r *gin.Engine) {
 		requirements := api.Group("/requirements")
 		{
 			requirements.GET("", controllers.GetRequirements)                                 // Public
+			requirements.GET("/:id", controllers.GetRequirement)                              // Public
 			requirements.POST("", middleware.AuthMiddleware(), controllers.CreateRequirement) // Protected
 			requirements.PUT("/:id", middleware.AuthMiddleware(), controllers.UpdateRequirement)
 			requirements.DELETE("/:id", middleware.AuthMiddleware(), controllers.DeleteRequirement)
@@ -79,6 +87,7 @@ func SetupRoutes(r *gin.Engine) {
 		{
 			admin.GET("/users", controllers.GetUsers)
 			admin.PATCH("/users/:id/role", controllers.UpdateUserRole)
+			admin.PATCH("/users/:id/badge", controllers.UpdateUserBadge)
 			admin.DELETE("/users/:id", controllers.DeleteUser)
 			admin.PATCH("/users/:id/toggle-ban", controllers.ToggleUserBan)
 			admin.POST("/users/:id/message", controllers.SendUserMessage)
@@ -133,6 +142,22 @@ func SetupRoutes(r *gin.Engine) {
 			bookmarks.GET("", controllers.GetBookmarks)
 			bookmarks.POST("/toggle", controllers.ToggleBookmark)
 			bookmarks.GET("/check", controllers.IsBookmarked)
+		}
+
+		// Chat routes
+		chatController := controllers.NewChatController(hub)
+		chat := api.Group("/chat")
+		chat.Use(middleware.AuthMiddleware())
+		{
+			chat.GET("/threads", chatController.GetMyThreads)
+			chat.GET("/threads/:id", chatController.GetThreadMessages)
+			chat.POST("/threads", chatController.CreateThread)
+			chat.POST("/threads/:id/messages", chatController.SendChatMessage)
+			chat.POST("/threads/:id/read", chatController.MarkThreadRead)
+			chat.PUT("/messages/:messageId", chatController.EditMessage)
+			chat.DELETE("/messages/:messageId", chatController.DeleteMessage)
+			chat.POST("/threads/:id/typing", chatController.UpdateTypingStatus)
+			chat.GET("/search", chatController.SearchMessages)
 		}
 
 		// God Mode Route - Critical System Access

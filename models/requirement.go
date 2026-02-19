@@ -17,6 +17,8 @@ type Requirement struct {
 	Location      string         `json:"location"`
 	Description   string         `json:"description"`
 	ContactMethod string         `json:"contactMethod"`
+	ContactName   string         `json:"contact_name"`
+	ContactPhone  string         `json:"contact_phone"`
 	UserID        uint           `json:"user_id"`
 	User          User           `gorm:"foreignKey:UserID" json:"user"`
 	IsVerified    bool           `gorm:"default:false" json:"is_verified"`

@@ -15,6 +15,7 @@ type User struct {
 	Role               string         `gorm:"default:'seeker'" json:"role"`                  // 'seeker' or 'owner' or 'admin' or 'developer'
 	CompanyName        string         `json:"company_name"`                                  // Optional for developers
 	PublicPreference   string         `gorm:"default:'Anonymized'" json:"public_preference"` // 'Anonymized' or 'Full'
+	Badge              string         `gorm:"default:'User'" json:"badge"`                   // 'Verified Broker', 'User', 'Verified'
 	ContactPreference  string         `gorm:"default:'In-app'" json:"contact_preference"`    // 'In-app' or 'Email' or 'Phone'
 	EmailNotifications bool           `gorm:"default:true" json:"email_notifications"`
 	InAppNotifications bool           `gorm:"default:true" json:"in_app_notifications"`

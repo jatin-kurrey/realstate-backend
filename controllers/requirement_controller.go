@@ -9,6 +9,22 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+func GetRequirement(c *gin.Context) {
+	id := c.Param("id")
+	var requirement models.Requirement
+	if err := config.DB.Preload("User").First(&requirement, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Requirement not found"})
+		return
+	}
+
+	// Anonymize if needed
+	if requirement.User.PublicPreference == "Anonymized" {
+		requirement.User.Name = "Visitor " + fmt.Sprint(requirement.User.ID+100)
+	}
+
+	c.JSON(http.StatusOK, requirement)
+}
+
 func GetRequirements(c *gin.Context) {
 	var requirements []models.Requirement
 	if err := config.DB.Preload("User").Where("is_active = ?", true).Find(&requirements).Error; err != nil {
@@ -91,6 +107,10 @@ func UpdateRequirement(c *gin.Context) {
 	requirement.MaxArea = updateData.MaxArea
 	requirement.Description = updateData.Description
 	requirement.ContactMethod = updateData.ContactMethod
+
+	// Also allow updating contact info
+	requirement.ContactName = updateData.ContactName
+	requirement.ContactPhone = updateData.ContactPhone
 
 	if err := config.DB.Save(&requirement).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update requirement"})
