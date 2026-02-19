@@ -54,6 +54,7 @@ func main() {
 	}))
 
 	r.GET("/health", func(c *gin.Context) {
+		log.Println("[HEALTH] Check received")
 		c.JSON(http.StatusOK, gin.H{"status": "UP"})
 	})
 
@@ -63,11 +64,14 @@ func main() {
 
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "5000"
+		port = "8080" // Default port for many cloud providers
 	}
 
-	log.Printf("Server starting on port %s", port)
-	if err := r.Run(":" + port); err != nil {
-		log.Fatal(err)
+	// Explicitly bind to 0.0.0.0 for Render/Docker compatibility
+	addr := "0.0.0.0:" + port
+	log.Printf("Server starting on %s", addr)
+
+	if err := r.Run(addr); err != nil {
+		log.Fatal("Failed to start server: ", err)
 	}
 }
